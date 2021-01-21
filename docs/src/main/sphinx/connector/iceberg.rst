@@ -73,7 +73,7 @@ Transform                             Description
 
 In this example, the table is partitioned by month and further divided into 10 buckets based on a hash of the account number::
 
-    CREATE TABLE iceberg.testdb.sample_partitioned (
+    CREATE TABLE iceberg.testdb.customer_accounts (
         order_date DATE,
         account_number BIGINT,
         customer VARCHAR)
@@ -87,15 +87,15 @@ partitions if the ``WHERE`` clause specifies an identity transform of a partitio
 column.  Given the table definition above, this SQL will delete all partitions
 for which ``order_date`` is in the month of June, 2018::
 
-    DELETE FROM iceberg.testdb.sample_partitioned
-    WHERE date_trunc(month, order_date) = date_trunc(month, DATE '2018-06-01')
+    DELETE FROM iceberg.testdb.customer_accounts
+    WHERE date_trunc('month', order_date) = date_trunc('month', DATE '2018-06-01')
 
 Currently, the Iceberg connector only supports deletion by partition.
 This SQL below will fail because the ``WHERE`` clause selects only some of the rows
 in the partition::
 
-    DELETE FROM iceberg.testdb.sample_partitioned
-    WHERE date_trunc(month, order_date) = date_trunc(month, DATE '2018-06-01') AND customer = 'Freds Foods'
+    DELETE FROM iceberg.testdb.customer_accounts
+    WHERE date_trunc('month', order_date) = date_trunc('month', DATE '2018-06-01') AND customer = 'Freds Foods'
 
 Rolling back to a previous snapshot
 -----------------------------------
@@ -107,12 +107,12 @@ The connector provides a system snapshots table for each Iceberg table.  Snapsho
 identified by BIGINT snapshot IDs.  You can find the latest snapshot ID for table
 ``customer_accounts`` by running the following command::
 
-    SELECT snapshot_id FROM "customer_accounts$snapshots" ORDER BY committed_at DESC LIMIT 1
+    SELECT snapshot_id FROM iceberg.testdb."customer_accounts$snapshots" ORDER BY committed_at DESC LIMIT 1
 
 A SQL procedure ``system.rollback_to_snapshot`` allows the caller to roll back
 the state of the table to a previous snapshot id::
 
-    CALL system.rollback_to_snapshot(schema_name, table_name, snapshot_id)
+    CALL system.rollback_to_snapshot('testdb', 'customer_account', 8954597067493422955)
 
 Schema evolution
 ----------------
@@ -133,7 +133,7 @@ System tables and columns
 -------------------------
 
 The connector supports queries of the table partitions.  Given a table ``customer_accounts``,
-``SELECT * customer_acccounts$partitions`` shows the table partitions, including the minimum
+``SELECT * FROM iceberg.testdb.customer_acccounts$partitions`` shows the table partitions, including the minimum
 and maximum values for the partition columns.
 
 Iceberg table properties
